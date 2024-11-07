@@ -1,0 +1,110 @@
+From 7b7e0b4d69c14d7c929d71aeb4a3cb2f3a1f4dcf Mon Sep 17 00:00:00 2001
+From: Sean <sean@yourdomain.com>
+Date: Wed, 6 Nov 2024 10:00:00 +0000
+Subject: [PATCH] Advanced Video Creation Script with Optional Text, Logo, and
+ Music Overlay
+
+---
+ create_advanced_video.py | 64 ++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 64 insertions(+)
+ create mode 100644 create_advanced_video.py
+
+diff --git a/create_advanced_video.py b/create_advanced_video.py
+new file mode 100644
+index 0000000..d15e4ff
+--- /dev/null
++++ b/create_advanced_video.py
+@@ -0,0 +1,64 @@
++import subprocess
++
++def create_advanced_video(output_file, text="Your Text Here", bg_color="blue", text_color="white", logo_path=None, music_file=None):
++    """
++    Creates a video with a customizable background color, moving text overlay, optional logo, 
++    and optional background music.
++
++    Parameters:
++    - output_file (str): The name of the output video file.
++    - text (str): The text to display on the video.
++    - bg_color (str): Background color of the video.
++    - text_color (str): Color of the text overlay.
++    - logo_path (str): Optional path to the logo image file.
++    - music_file (str): Optional path to the background music file.
++    """
++    
++    # Step 1: Create a background video with a color fade effect
++    # - color source is used to create a solid background with color fade in and out effects.
++    # - Video is encoded with libx264 and saved as 'background.mp4'
++    cmd_bg = [
++        'ffmpeg',
++        '-f', 'lavfi',
++        '-i', f"color={bg_color}:s=1280x720:d=5,fade=t=in:st=0:d=1:color=black",
++        '-vf', "fade=t=out:st=4:d=1",
++        '-c:v', 'libx264',
++        '-t', '5',
++        '-pix_fmt', 'yuv420p',
++        'background.mp4'
++    ]
++    subprocess.run(cmd_bg, check=True)
++    
++    # Step 2: Add a moving text overlay on the background video
++    # - Text moves across the screen from left to right with the specified text color.
++    # - Result is saved as 'text_overlay.mp4'
++    cmd_text = [
++        'ffmpeg',
++        '-i', 'background.mp4',
++        '-vf', f"drawtext=text='{text}':fontcolor={text_color}:fontsize=48:x=w*mod(t,1):y=h/2",
++        '-c:v', 'libx264',
++        '-t', '5',
++        '-pix_fmt', 'yuv420p',
++        'text_overlay.mp4'
++    ]
++    subprocess.run(cmd_text, check=True)
++    
++    # Step 3: Optionally overlay a logo at the bottom-right corner if logo_path is provided
++    if logo_path:
++        cmd_logo = [
++            'ffmpeg',
++            '-i', 'text_overlay.mp4',
++            '-i', logo_path,
++            '-filter_complex', '[0:v][1:v] overlay=W-w-10:H-h-10',
++            '-c:a', 'copy',
++            'final_video.mp4'
++        ]
++        subprocess.run(cmd_logo, check=True)
++    else:
++        cmd_logo = [
++            'ffmpeg',
++            '-i', 'text_overlay.mp4',
++            '-c:v', 'libx264',
++            '-c:a', 'copy',
++            'final_video.mp4'
++        ]
++        subprocess.run(cmd_logo, check=True)
++    
++    # Step 4: Optionally add background music if music_file is provided
++    if music_file:
++        cmd_audio = [
++            'ffmpeg',
++            '-i', 'final_video.mp4',
++            '-i', music_file,
++            '-c:v', 'copy',
++            '-c:a', 'aac',
++            '-shortest',
++            output_file
++        ]
++        subprocess.run(cmd_audio, check=True)
++        print("Video created with audio!")
++    else:
++        subprocess.run(['mv', 'final_video.mp4', output_file])
++        print("Video created without audio!")
++
++# Example usage of the function
++output_file = 'enhanced_5_second_video.mp4'
++text = 'Welcome to the Show!'
++bg_color = 'blue'
++text_color = 'yellow'
++logo_path = 'logo.png'  # Path to the logo image
++music_file = 'background_music.mp3'  # Optional background music
++
++create_advanced_video(output_file, text, bg_color, text_color, logo_path, music_file)
+\ No newline at end of file
